@@ -71,6 +71,10 @@ let deck = loadDeck();
 // The id of the card currently asking "Delete this card?", or null.
 let confirmingId = null;
 
+// Ids of cards currently showing their answer. Kept so a re-render
+// (e.g. opening the delete prompt) doesn't flip cards back.
+const flippedIds = new Set();
+
 // Read the deck from localStorage. Falls back to an empty deck if storage
 // is unavailable or the saved data is corrupted.
 function loadDeck() {
@@ -128,6 +132,7 @@ function deleteCard(id) {
 
   const [removed] = deck.splice(index, 1);
   confirmingId = null;
+  flippedIds.delete(id);
 
   if (!saveDeck(deckMessage)) {
     // Put the card back so the list matches what is actually saved.
@@ -146,6 +151,54 @@ function createId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+function createFace(side, label, text, hint) {
+  const face = document.createElement('span');
+  face.className = `card-face card-${side}`;
+
+  const labelEl = document.createElement('span');
+  labelEl.className = 'face-label';
+  labelEl.textContent = label;
+
+  const textEl = document.createElement('span');
+  textEl.className = 'face-text';
+  textEl.textContent = text;
+
+  const hintEl = document.createElement('span');
+  hintEl.className = 'face-hint';
+  hintEl.textContent = hint;
+
+  face.append(labelEl, textEl, hintEl);
+  return face;
+}
+
+// Updates the class and the screen reader state; the CSS does the animation.
+// Only the visible face is exposed to screen readers.
+function setFlipped(flipCard, flipped) {
+  flipCard.classList.toggle('is-flipped', flipped);
+  flipCard.setAttribute('aria-pressed', String(flipped));
+  flipCard.querySelector('.card-front').setAttribute('aria-hidden', String(flipped));
+  flipCard.querySelector('.card-back').setAttribute('aria-hidden', String(!flipped));
+}
+
+// A real <button>, so click, Space and Enter all flip it for free.
+function createFlipCard(card) {
+  const flipCard = document.createElement('button');
+  flipCard.type = 'button';
+  flipCard.className = 'flip-card';
+  flipCard.dataset.action = 'flip';
+
+  const inner = document.createElement('span');
+  inner.className = 'flip-inner';
+  inner.append(
+    createFace('front', 'Question', card.question, 'Click or press Space to see the answer'),
+    createFace('back', 'Answer', card.answer, 'Click or press Space to see the question')
+  );
+
+  flipCard.append(inner);
+  setFlipped(flipCard, flippedIds.has(card.id));
+  return flipCard;
+}
+
 function renderDeck() {
   cardList.innerHTML = '';
 
@@ -154,15 +207,7 @@ function renderDeck() {
     item.className = 'card-item';
     item.dataset.id = card.id;
 
-    const front = document.createElement('p');
-    front.className = 'card-side';
-    front.innerHTML = '<span class="side-label">Q:</span> ';
-    front.append(card.question);
-
-    const back = document.createElement('p');
-    back.className = 'card-side';
-    back.innerHTML = '<span class="side-label">A:</span> ';
-    back.append(card.answer);
+    const flipCard = createFlipCard(card);
 
     const actions = document.createElement('div');
     actions.className = 'card-actions';
@@ -182,7 +227,7 @@ function renderDeck() {
       actions.append(deleteButton);
     }
 
-    item.append(front, back, actions);
+    item.append(flipCard, actions);
     cardList.append(item);
   });
 
@@ -220,14 +265,20 @@ form.addEventListener('submit', (event) => {
   renderDeck();
 });
 
-// One listener handles the Delete / confirm / Cancel buttons on every card.
+// One listener handles the flip and Delete / confirm / Cancel buttons on every card.
 cardList.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const id = button.closest('.card-item').dataset.id;
 
-  if (button.dataset.action === 'delete') {
+  if (button.dataset.action === 'flip') {
+    // Flip in place rather than re-rendering, so the animation can play.
+    const flipped = !flippedIds.has(id);
+    if (flipped) flippedIds.add(id);
+    else flippedIds.delete(id);
+    setFlipped(button, flipped);
+  } else if (button.dataset.action === 'delete') {
     confirmingId = id;
     renderDeck();
     focusCardButton(id, 'cancel-delete');
