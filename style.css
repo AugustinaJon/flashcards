@@ -9,6 +9,9 @@
   --error: #c0392b;
   --success: #1e8a4c;
   --on-accent: #ffffff;
+  --card-back: #f0f1ff;
+  --card-shadow: 0 1px 2px rgba(31, 35, 48, 0.08), 0 6px 16px rgba(31, 35, 48, 0.1);
+  --card-shadow-hover: 0 2px 4px rgba(31, 35, 48, 0.1), 0 12px 28px rgba(31, 35, 48, 0.16);
   color-scheme: light;
 }
 
@@ -26,6 +29,9 @@
     --error: #ff7b6e;
     --success: #4cc38a;
     --on-accent: #14161f;
+    --card-back: #262a40;
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.35);
+    --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 12px 28px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
 }
@@ -41,6 +47,9 @@
   --error: #ff7b6e;
   --success: #4cc38a;
   --on-accent: #14161f;
+  --card-back: #262a40;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.35);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 12px 28px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
 }
 
@@ -192,25 +201,96 @@ textarea.invalid {
 }
 
 .card-item {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
+  margin-bottom: 24px;
 }
 
 .card-item:last-child {
   margin-bottom: 0;
 }
 
-.card-side {
-  margin: 0;
+/* The card itself: a button with two faces stacked in one grid cell,
+   so it is as tall as the longer side. Flipping rotates the inner layer. */
+.flip-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  perspective: 1200px;
+  border-radius: 14px;
+}
+
+.flip-card:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.flip-inner {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.flip-card.is-flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 200px;
+  padding: 18px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.flip-card:hover .card-face {
+  box-shadow: var(--card-shadow-hover);
+}
+
+.card-back {
+  background: var(--card-back);
+  border-color: var(--accent);
+  transform: rotateY(180deg);
+}
+
+.face-label {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.face-text {
+  font-size: 1.25rem;
+  font-weight: 600;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.card-side + .card-side {
-  margin-top: 6px;
+.face-hint {
+  font-size: 0.8rem;
   color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner {
+    transition: none;
+  }
 }
 
 #deck-heading:focus {
@@ -261,9 +341,4 @@ textarea.invalid {
 
 .btn-small.btn-danger:hover {
   opacity: 0.9;
-}
-
-.side-label {
-  font-weight: 600;
-  color: var(--text);
 }
