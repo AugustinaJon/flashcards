@@ -1,0 +1,112 @@
+const STORAGE_KEY = 'flashcards.deck';
+
+const form = document.getElementById('card-form');
+const questionInput = document.getElementById('question');
+const answerInput = document.getElementById('answer');
+const formMessage = document.getElementById('form-message');
+const cardList = document.getElementById('card-list');
+const cardCount = document.getElementById('card-count');
+const emptyState = document.getElementById('empty-state');
+
+let deck = loadDeck();
+
+// Read the deck from localStorage. Falls back to an empty deck if storage
+// is unavailable or the saved data is corrupted.
+function loadDeck() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error('Could not load deck:', err);
+    showMessage('Your saved cards could not be loaded, so you are starting with an empty deck.', 'error');
+    return [];
+  }
+}
+
+// Returns true if the deck was saved, false otherwise.
+function saveDeck() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(deck));
+    return true;
+  } catch (err) {
+    console.error('Could not save deck:', err);
+    if (err.name === 'QuotaExceededError') {
+      showMessage('Storage is full. Delete some cards and try again.', 'error');
+    } else {
+      showMessage('Your card could not be saved. Your browser may be blocking storage.', 'error');
+    }
+    return false;
+  }
+}
+
+function showMessage(text, type) {
+  formMessage.textContent = text;
+  formMessage.className = 'message' + (type ? ' ' + type : '');
+}
+
+function createId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function renderDeck() {
+  cardList.innerHTML = '';
+
+  deck.forEach((card) => {
+    const item = document.createElement('li');
+    item.className = 'card-item';
+
+    const front = document.createElement('p');
+    front.className = 'card-side';
+    front.innerHTML = '<span class="side-label">Q:</span> ';
+    front.append(card.question);
+
+    const back = document.createElement('p');
+    back.className = 'card-side';
+    back.innerHTML = '<span class="side-label">A:</span> ';
+    back.append(card.answer);
+
+    item.append(front, back);
+    cardList.append(item);
+  });
+
+  emptyState.hidden = deck.length > 0;
+  cardCount.textContent = deck.length ? `(${deck.length})` : '';
+}
+
+form.addEventListener('submit', (event) => {
+  event.preventDefault();
+
+  const question = questionInput.value.trim();
+  const answer = answerInput.value.trim();
+
+  questionInput.classList.toggle('invalid', !question);
+  answerInput.classList.toggle('invalid', !answer);
+
+  if (!question || !answer) {
+    showMessage('Please fill in both the question and the answer.', 'error');
+    (question ? answerInput : questionInput).focus();
+    return;
+  }
+
+  const card = { id: createId(), question, answer, status: 'learning' };
+  deck.push(card);
+
+  if (!saveDeck()) {
+    deck.pop();
+    return;
+  }
+
+  form.reset();
+  questionInput.focus();
+  showMessage('Card added.', 'success');
+  renderDeck();
+});
+
+// Clear the red border as soon as the user starts typing.
+[questionInput, answerInput].forEach((input) => {
+  input.addEventListener('input', () => input.classList.remove('invalid'));
+});
+
+renderDeck();
