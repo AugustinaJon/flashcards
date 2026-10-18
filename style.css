@@ -10,6 +10,10 @@
   --success: #1e8a4c;
   --on-accent: #ffffff;
   --card-back: #f0f1ff;
+  --known-text: #17663a;
+  --known-bg: #e3f4e9;
+  --learning-text: #8a4b00;
+  --learning-bg: #fdf0dc;
   --card-shadow: 0 1px 2px rgba(31, 35, 48, 0.08), 0 6px 16px rgba(31, 35, 48, 0.1);
   --card-shadow-hover: 0 2px 4px rgba(31, 35, 48, 0.1), 0 12px 28px rgba(31, 35, 48, 0.16);
   color-scheme: light;
@@ -30,6 +34,10 @@
     --success: #4cc38a;
     --on-accent: #14161f;
     --card-back: #262a40;
+  --known-text: #6fdc9f;
+  --known-bg: #173826;
+  --learning-text: #ffc27a;
+  --learning-bg: #3d2c14;
     --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.35);
     --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 12px 28px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
@@ -48,6 +56,10 @@
   --success: #4cc38a;
   --on-accent: #14161f;
   --card-back: #262a40;
+  --known-text: #6fdc9f;
+  --known-bg: #173826;
+  --learning-text: #ffc27a;
+  --learning-bg: #3d2c14;
   --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.35);
   --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 12px 28px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
@@ -266,8 +278,14 @@ textarea.invalid {
   transform: rotateY(180deg);
 }
 
+.face-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .face-label {
-  align-self: flex-start;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -280,6 +298,28 @@ textarea.invalid {
   font-weight: 600;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* Status colours are paired with text, so they never carry meaning alone. */
+.status-badge {
+  padding: 3px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-badge.status-known,
+.status-option.status-known[aria-pressed="true"] {
+  color: var(--known-text);
+  background: var(--known-bg);
+}
+
+.status-badge.status-learning,
+.status-option.status-learning[aria-pressed="true"] {
+  color: var(--learning-text);
+  background: var(--learning-bg);
 }
 
 .face-hint {
@@ -330,6 +370,18 @@ textarea.invalid {
 .btn-small:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.status-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.status-option[aria-pressed="true"] {
+  border-color: currentColor;
+  font-weight: 600;
 }
 
 .btn-small.btn-danger {
