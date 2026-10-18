@@ -1,6 +1,8 @@
 const STORAGE_KEY = 'flashcards.deck';
 const THEME_KEY = 'flashcards.theme';
 
+const STATUS_LABELS = { known: 'Known', learning: 'Still learning' };
+
 const themeToggle = document.getElementById('theme-toggle');
 const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -147,17 +149,67 @@ function deleteCard(id) {
   deckHeading.focus();
 }
 
+// Saves the new status, or puts the old one back if saving fails.
+function setStatus(id, status) {
+  const card = deck.find((c) => c.id === id);
+  if (!card || cardStatus(card) === status) return;
+
+  const previous = card.status;
+  card.status = status;
+
+  if (!saveDeck(deckMessage)) {
+    card.status = previous;
+    return;
+  }
+
+  showMessage('', '', deckMessage);
+  renderDeck();
+  focusCardButton(id, `mark-${status}`);
+}
+
+// Cards saved without a valid status count as still learning.
+function cardStatus(card) {
+  return card.status === 'known' ? 'known' : 'learning';
+}
+
+function createStatusBadge(status) {
+  const badge = document.createElement('span');
+  badge.className = `status-badge status-${status}`;
+  badge.textContent = (status === 'known' ? '✓ ' : '') + STATUS_LABELS[status];
+  return badge;
+}
+
+function createStatusToggle(card) {
+  const status = cardStatus(card);
+  const group = document.createElement('div');
+  group.className = 'status-toggle';
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', `Status for card: ${card.question}`);
+
+  ['known', 'learning'].forEach((option) => {
+    const button = createButton(STATUS_LABELS[option], `mark-${option}`, `btn-small status-option status-${option}`);
+    button.setAttribute('aria-pressed', String(option === status));
+    group.append(button);
+  });
+
+  return group;
+}
+
 function createId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-function createFace(side, label, text, hint) {
+function createFace(side, label, text, hint, status) {
   const face = document.createElement('span');
   face.className = `card-face card-${side}`;
+
+  const top = document.createElement('span');
+  top.className = 'face-top';
 
   const labelEl = document.createElement('span');
   labelEl.className = 'face-label';
   labelEl.textContent = label;
+  top.append(labelEl, createStatusBadge(status));
 
   const textEl = document.createElement('span');
   textEl.className = 'face-text';
@@ -167,7 +219,7 @@ function createFace(side, label, text, hint) {
   hintEl.className = 'face-hint';
   hintEl.textContent = hint;
 
-  face.append(labelEl, textEl, hintEl);
+  face.append(top, textEl, hintEl);
   return face;
 }
 
@@ -189,9 +241,10 @@ function createFlipCard(card) {
 
   const inner = document.createElement('span');
   inner.className = 'flip-inner';
+  const status = cardStatus(card);
   inner.append(
-    createFace('front', 'Question', card.question, 'Click or press Space to see the answer'),
-    createFace('back', 'Answer', card.answer, 'Click or press Space to see the question')
+    createFace('front', 'Question', card.question, 'Click or press Space to see the answer', status),
+    createFace('back', 'Answer', card.answer, 'Click or press Space to see the question', status)
   );
 
   flipCard.append(inner);
@@ -224,7 +277,7 @@ function renderDeck() {
     } else {
       const deleteButton = createButton('Delete', 'delete', 'btn-small');
       deleteButton.setAttribute('aria-label', `Delete card: ${card.question}`);
-      actions.append(deleteButton);
+      actions.append(createStatusToggle(card), deleteButton);
     }
 
     item.append(flipCard, actions);
@@ -265,7 +318,7 @@ form.addEventListener('submit', (event) => {
   renderDeck();
 });
 
-// One listener handles the flip and Delete / confirm / Cancel buttons on every card.
+// One listener handles the flip, status and Delete / confirm / Cancel buttons on every card.
 cardList.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
@@ -278,6 +331,10 @@ cardList.addEventListener('click', (event) => {
     if (flipped) flippedIds.add(id);
     else flippedIds.delete(id);
     setFlipped(button, flipped);
+  } else if (button.dataset.action === 'mark-known') {
+    setStatus(id, 'known');
+  } else if (button.dataset.action === 'mark-learning') {
+    setStatus(id, 'learning');
   } else if (button.dataset.action === 'delete') {
     confirmingId = id;
     renderDeck();
