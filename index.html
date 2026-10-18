@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashcards</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Flashcards</h1>
+
+    <section class="panel" aria-labelledby="add-heading">
+      <h2 id="add-heading">Add a new card</h2>
+
+      <form id="card-form" novalidate>
+        <div class="field">
+          <label for="question">Front: question</label>
+          <textarea id="question" name="question" rows="3" required
+            placeholder="e.g. What is the capital of Lithuania?"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="answer">Back: answer</label>
+          <textarea id="answer" name="answer" rows="3" required
+            placeholder="e.g. Vilnius"></textarea>
+        </div>
+
+        <p id="form-message" class="message" role="status" aria-live="polite"></p>
+
+        <button type="submit" class="btn">Add card</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="deck-heading">
+      <h2 id="deck-heading">Your deck <span id="card-count" class="count"></span></h2>
+      <p id="empty-state" class="empty">No cards yet. Add your first one above.</p>
+      <ul id="card-list" class="card-list"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
