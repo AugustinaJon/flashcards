@@ -1,4 +1,60 @@
 const STORAGE_KEY = 'flashcards.deck';
+const THEME_KEY = 'flashcards.theme';
+
+const themeToggle = document.getElementById('theme-toggle');
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+// The user's saved choice ('light' or 'dark'), or null to follow the system.
+function loadTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    return saved === 'light' || saved === 'dark' ? saved : null;
+  } catch (err) {
+    console.warn('Could not load theme:', err);
+    return null;
+  }
+}
+
+function saveTheme(theme) {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch (err) {
+    // The switch still works for this visit; it just won't be remembered.
+    console.warn('Could not save theme:', err);
+  }
+}
+
+function applyTheme(theme) {
+  if (theme) {
+    document.documentElement.dataset.theme = theme;
+  } else {
+    delete document.documentElement.dataset.theme;
+  }
+  updateThemeToggle();
+}
+
+function currentTheme() {
+  return document.documentElement.dataset.theme || (systemDark.matches ? 'dark' : 'light');
+}
+
+// The button offers the theme you would switch to.
+function updateThemeToggle() {
+  const isDark = currentTheme() === 'dark';
+  themeToggle.setAttribute('aria-pressed', String(isDark));
+  themeToggle.querySelector('.theme-icon').textContent = isDark ? '☀️' : '🌙';
+  themeToggle.querySelector('.theme-label').textContent = isDark ? 'Light mode' : 'Dark mode';
+}
+
+themeToggle.addEventListener('click', () => {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  saveTheme(next);
+});
+
+// Keep the button label right if the system theme changes and no choice is saved.
+systemDark.addEventListener('change', updateThemeToggle);
+
+applyTheme(loadTheme());
 
 const form = document.getElementById('card-form');
 const questionInput = document.getElementById('question');
